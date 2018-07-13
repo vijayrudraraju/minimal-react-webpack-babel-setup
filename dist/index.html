@@ -5,6 +5,19 @@
   </head>
   <body>
     <div id="app"></div>
+    <script src="https://www.gstatic.com/firebasejs/5.2.0/firebase.js"></script>
+    <script>
+      // Initialize Firebase
+      var config = {
+      apiKey: "AIzaSyCHLQOAimbVTnJh3oRWgV3YiuqOhr4C9dE",
+      authDomain: "tractal-0.firebaseapp.com",
+      databaseURL: "https://tractal-0.firebaseio.com",
+      projectId: "tractal-0",
+      storageBucket: "tractal-0.appspot.com",
+      messagingSenderId: "1075441560445"
+      };
+      firebase.initializeApp(config);
+    </script>
     <script src="/bundle.js"></script>
   </body>
 </html>

@@ -1,0 +1,51 @@
+.grid {
+  display: flex;
+  flex-direction: column;
+}
+.grid__row {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+}
+.grid__col {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /*border: 4px solid red;*/
+  flex-grow: 1;
+  height: 50px;
+  /*background: linear-gradient(to top right, #fff calc(50% - 10px), #aaa, #fff calc(50% + 10px) )*/
+}
+
+
+.grid__circle {
+  width: 40px;
+  height: 40px;
+  border: 2px solid black;
+  border-radius: 24px;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  margin-bottom: 10px;
+}
+.controls__row {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+}
+button {
+  flex-basis: 80px;
+}
+
+.line {
+  border-bottom: 6px solid black;
+  width: 55%;
+  position: relative;
+  z-index: -100;
+}
+.line.left {
+  left: 45%;
+}
