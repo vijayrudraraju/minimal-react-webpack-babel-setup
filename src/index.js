@@ -4,7 +4,8 @@ import * as Redux from 'redux'
 import * as ReactRedux from 'react-redux'
 import * as ReduxSaga from 'redux-saga'
 import 'babel-polyfill'
-import * as ThumbsUp from 'thumbsup'
+import ThumbsUp from 'thumbsup'
+import * as Axios from 'axios'
 
 console.log('VIJ', 'ThumbsUp', ThumbsUp)
 
@@ -25,68 +26,47 @@ const { Component, PureComponent, Fragment } = React
 const createSagaMiddleware = ReduxSaga.default
 const { call, put, takeOnly, takeEvery, takeLatest } = ReduxSaga.effects
 
-const withThumbsupGettersAndSetters = (WrappedComponent, registeredSchema) => {
-  const ThumbsupComponent = class extends Component {
-    constructor(props) {
-      super(props)
-
-      const thumbsupReducer = (previousState, action) => {
-        console.log('VIJ', 'thumbsupReducer', { previousState, action })
-        for (const [key, value] of Object.entries(this.props._store)) {
-          if (action.type === `SET_${key}`) {
-            previousState[key] = action.value
-            break
-          }
-        }
-        return Object.assign({}, previousState)
-      }
-      globalStore.replaceReducer(thumbsupReducer)
-
-      WrappedComponent.prototype.state = {}
-      for (const [key, value] of Object.entries(this.props._store)) {
-        Object.defineProperty(WrappedComponent.prototype.state, key, { 
-          set: (x) => { 
-            console.log('VIJ', 'setting', x)
-            globalStore.dispatch({ type: `SET_${key}`, value: x })
-          },
-          get: () => { 
-            console.log('VIJ', 'getting', key, this.props._store[key])
-            return this.props._store[key] 
-          }
-        })
-        
-      }
-    }
-
-    render() {
-      return (
-        <WrappedComponent 
-          {...this.props}>
-          {this.props.children}
-        </WrappedComponent>
-      )
-    }
-  }
-
-  return connect(
-    function mapStateToProps(state) {
-      return {
-        _store: { 
-          numCols: state.numCols,
-          numRows: state.numRows
-        }
-      }
-    },
-    null
-    /*
-    function mapDispatchToProps(dispatch) {
-      return {
-        actions: bindActionCreators(actionCreators, dispatch)
-      }
-    }
-    */
-  )(ThumbsupComponent)
+const initialState = {
+  numCols: 7,
+  numRows: 3,
+  gifs: [[]],
+  queryInput: '',
+  query: '',
 }
+const initialReducer = (state = initialState, action) => {
+  return state
+}
+
+const sagaMiddleware = createSagaMiddleware()
+const customMiddleware = store => next => action => {
+  console.log('customMiddleware', action)
+  next(action)
+}
+
+function* mySaga() {
+  console.log('mySaga')
+}
+sagaMiddleware(mySaga)
+
+const globalStore = createStore(
+  initialReducer,
+  initialState,
+  applyMiddleware(sagaMiddleware, customMiddleware)
+)
+
+const GifsComponent = ThumbsUp(class extends PureComponent {
+  render() {
+    let gifs = []
+    for (let j=0; j<this.state.gifs; j++) {
+      gifs.push(<img src={gifs[j].url}/>)
+    }
+    return (
+      <Fragment>
+        {gifs}
+      </Fragment>
+    )
+  }
+}, globalStore)
 
 class PresentationalComponent extends PureComponent {
   render() {
@@ -109,7 +89,7 @@ class PresentationalComponent extends PureComponent {
   }
 }
 
-const ControlPanel = withThumbsupGettersAndSetters(class extends PureComponent { 
+const ControlPanel = ThumbsUp(class extends PureComponent {
   decrementNumCols() {
     this.state.numCols = this.state.numCols - 1
   }
@@ -124,34 +104,47 @@ const ControlPanel = withThumbsupGettersAndSetters(class extends PureComponent {
     this.state.numRows = this.state.numRows + 1
   }
 
+  onQueryChange(ev) {
+    this.state.queryInput = ev.target.value
+  }
+  submitQuery(ev) {
+    this.state.query = this.state.queryInput
+  }
+
   render() {
     return (
       <div className="controls">
-      <div className="controls__row">
-        <button onClick={() => this.decrementNumCols()}>-</button>Columns<button onClick={() => this.incrementNumCols()}>+</button>
-      </div>
-      <div className="controls__row">
-      <button onClick={() => this.decrementNumRows()}>-</button>Rows<button onClick={() => this.incrementNumRows()}>+</button></div>
+        <div className="controls__row">
+          <button onClick={() => this.decrementNumCols()}>-</button>Columns<button onClick={() => this.incrementNumCols()}>+</button>
+        </div>
+        <div className="controls__row">
+          <button onClick={() => this.decrementNumRows()}>-</button>Rows<button onClick={() => this.incrementNumRows()}>+</button>
+        </div>
+        <div className="controls__row">
+          <input onChange={(ev) => this.onQueryChange(ev)}/>
+          <button onClick={(ev) => this.submitQuery(ev)}/>
+        </div>
       </div>
     )
   }
-})
+}, globalStore)
 
-const AppContainer = withThumbsupGettersAndSetters(class extends PureComponent {
+const AppContainer = ThumbsUp(class extends PureComponent {
   render() {  
     const { state } = this
-    console.log('VIJ', 'ContainerComponent', 'render', this)
+    console.log('VIJ', 'ContainerComponent', 'render')
     return (
       <Fragment>
-      <ControlPanel />
-      <PresentationalComponent 
-        numCols={state.numCols} 
-        numRows={state.numRows}
-      />
+        <ControlPanel/>
+        <GifsComponent/>
+        <PresentationalComponent 
+          numCols={state.numCols} 
+          numRows={state.numRows}
+        />
       </Fragment>
     )
   }
-})
+}, globalStore)
 
 class Line extends Component {
   getDefaultProps () { return { side: 'root' } }
@@ -188,31 +181,6 @@ class Line extends Component {
     />
   }
 }
-
-const initialState = {
-  numCols: 7,
-  numRows: 3
-}
-const initialReducer = (state = initialState, action) => {
-  return state
-}
-
-const sagaMiddleware = createSagaMiddleware()
-const customMiddleware = store => next => action => {
-  console.log('customMiddleware', action)
-  next(action)
-}
-
-function* mySaga() {
-  console.log('mySaga')
-}
-sagaMiddleware(mySaga)
-
-const globalStore = createStore(
-  initialReducer,
-  initialState,
-  applyMiddleware(sagaMiddleware, customMiddleware)
-)
 
 render(
   <Provider store={globalStore}>
