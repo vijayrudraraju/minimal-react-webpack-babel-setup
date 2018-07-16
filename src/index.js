@@ -25,59 +25,6 @@ const { Component, PureComponent, Fragment } = React
 const createSagaMiddleware = ReduxSaga.default
 const { call, put, takeOnly, takeEvery, takeLatest } = ReduxSaga.effects
 
-class PresentationalComponent extends PureComponent {
-  render() {
-    const { numCols, numRows } = this.props
-    let colDivs = []
-    for (let j=0; j<numCols; j++) {
-      colDivs.push(
-        <div key={j} className="grid__col">
-        <div className="grid__circle"></div>
-        </div>
-      )
-    }
-    let rowDivs = []
-    for (let i=0; i<numRows; i++) {
-      rowDivs.push(<div key={i} className="grid__row">{colDivs}</div>)
-    }
-    return (
-      <div className="grid">{ rowDivs }</div>
-    )
-  }
-}
-
-class ControlPanel extends PureComponent { 
-  render(props) {
-    const { decrementNumCols, incrementNumCols, decrementNumRows, incrementNumRows } = this.props
-    return (
-      <div className="controls">
-      <div className="controls__row"><button onClick={decrementNumCols}>-</button>Columns<button onClick={incrementNumCols}>+</button></div>
-      <div className="controls__row"><button onClick={decrementNumRows}>-</button>Rows<button onClick={incrementNumRows}>+</button></div>
-      </div>
-    )
-  }
-}
-
-class ContainerComponent extends PureComponent {
-  render() {  
-    const { state } = this
-    return (
-      <Fragment>
-      <ControlPanel 
-        decrementNumCols={() => state.numCols = state.numCols - 1} 
-        incrementNumCols={() => state.numCols = state.numCols + 1} 
-        decrementNumRows={() => state.numRows = state.numRows - 1} 
-        incrementNumRows={() => state.numRows = state.numRows + 1}
-      />
-      <PresentationalComponent 
-        numCols={state.numCols} 
-        numRows={state.numRows}
-      />
-      </Fragment>
-    )
-  }
-}
-
 const withThumbsupGettersAndSetters = (WrappedComponent, registeredSchema) => {
   const ThumbsupComponent = class extends Component {
     constructor(props) {
@@ -141,22 +88,70 @@ const withThumbsupGettersAndSetters = (WrappedComponent, registeredSchema) => {
   )(ThumbsupComponent)
 }
 
-const AppContainer = withThumbsupGettersAndSetters(ContainerComponent)
-
-/*
-const AppContainer = connect(
-  function mapStateToProps(state) {
-    console.log('AppContainer', state)
-    return {
-      numCols: state.numCols,
-      numRows: state.numRows
+class PresentationalComponent extends PureComponent {
+  render() {
+    const { numCols, numRows } = this.props
+    let colDivs = []
+    for (let j=0; j<numCols; j++) {
+      colDivs.push(
+        <div key={j} className="grid__col">
+        <div className="grid__circle"></div>
+        </div>
+      )
     }
-  },
-  (dispatch) => {
-    return bindActionCreators(actionCreators, dispatch)
+    let rowDivs = []
+    for (let i=0; i<numRows; i++) {
+      rowDivs.push(<div key={i} className="grid__row">{colDivs}</div>)
+    }
+    return (
+      <div className="grid">{ rowDivs }</div>
+    )
   }
-)(ContainerComponent)
-*/
+}
+
+const ControlPanel = withThumbsupGettersAndSetters(class extends PureComponent { 
+  decrementNumCols() {
+    this.state.numCols = this.state.numCols - 1
+  }
+  incrementNumCols() {
+    this.state.numCols = this.state.numCols + 1
+  }
+
+  decrementNumRows() {
+    this.state.numRows = this.state.numRows - 1
+  }
+  incrementNumRows() {
+    this.state.numRows = this.state.numRows + 1
+  }
+
+  render() {
+    return (
+      <div className="controls">
+      <div className="controls__row">
+        <button onClick={() => this.decrementNumCols()}>-</button>Columns<button onClick={() => this.incrementNumCols()}>+</button>
+      </div>
+      <div className="controls__row">
+      <button onClick={() => this.decrementNumRows()}>-</button>Rows<button onClick={() => this.incrementNumRows()}>+</button></div>
+      </div>
+    )
+  }
+})
+
+const AppContainer = withThumbsupGettersAndSetters(class extends PureComponent {
+  render() {  
+    const { state } = this
+    console.log('VIJ', 'ContainerComponent', 'render', this)
+    return (
+      <Fragment>
+      <ControlPanel />
+      <PresentationalComponent 
+        numCols={state.numCols} 
+        numRows={state.numRows}
+      />
+      </Fragment>
+    )
+  }
+})
 
 class Line extends Component {
   getDefaultProps () { return { side: 'root' } }
@@ -194,42 +189,12 @@ class Line extends Component {
   }
 }
 
-const actionTypes = {
-  INCR_NUM_COLS: 'INCR_NUM_COLS',
-  DECR_NUM_COLS: 'DECR_NUM_COLS',
-  INCR_NUM_ROWS: 'INCR_NUM_ROWS',
-  DECR_NUM_ROWS: 'DECR_NUM_ROWS',
-}
-const actionCreators = {
-  incrementNumCols: () => ({ type: actionTypes.INCR_NUM_COLS }),
-  decrementNumCols: () => ({ type: actionTypes.DECR_NUM_COLS }),
-  incrementNumRows: () => ({ type: actionTypes.INCR_NUM_ROWS }),
-  decrementNumRows: () => ({ type: actionTypes.DECR_NUM_ROWS }),
-}
-
 const initialState = {
   numCols: 7,
   numRows: 3
 }
-const reducer = (state = initialState, action) => {
-  console.log('reducer', action.type)
-  switch (action.type) {
-    case actionTypes.INCR_NUM_COLS:
-      state.numCols++
-      break
-    case actionTypes.DECR_NUM_COLS:
-      state.numCols--
-      break
-    case actionTypes.INCR_NUM_ROWS:
-      state.numRows++
-      break
-    case actionTypes.DECR_NUM_ROWS:
-      state.numRows--
-      break 
-    default:
-      break
-  }
-  return { numCols: state.numCols, numRows: state.numRows }
+const initialReducer = (state = initialState, action) => {
+  return state
 }
 
 const sagaMiddleware = createSagaMiddleware()
@@ -244,7 +209,7 @@ function* mySaga() {
 sagaMiddleware(mySaga)
 
 const globalStore = createStore(
-  reducer,
+  initialReducer,
   initialState,
   applyMiddleware(sagaMiddleware, customMiddleware)
 )
@@ -286,12 +251,5 @@ evRouter.on('TEST', (ev) => {
   console.log('on', 'ev', ev)
 })
 evRouter.dispatch({ type: 'TEST'})
-
-/*
-ReactDOM.render(
-  <div>{title}</div>,
-  document.getElementById('app')
-);
-*/
 
 module.hot.accept();
