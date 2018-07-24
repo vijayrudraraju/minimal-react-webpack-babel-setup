@@ -1,60 +1,34 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import * as Redux from 'redux'
+//import * as Redux from 'redux'
 import * as ReactRedux from 'react-redux'
-import * as ReduxSaga from 'redux-saga'
+//import * as ReduxSaga from 'redux-saga'
 import 'babel-polyfill'
-import ThumbsUp from 'thumbsup'
-import * as Axios from 'axios'
-
-console.log('VIJ', 'ThumbsUp', ThumbsUp)
+import * as ThumbsUp from 'thumbsup'
+import Mappings from './mappings'
 
 import './../styles/index.scss'
 
 const title = 'My Minimal React Webpack Babel Setup'
 
+console.log('ThumbsUp', ThumbsUp)
 console.log('React', React)
 console.log('ReactDOM', ReactDOM)
-console.log('Redux', Redux)
 console.log('ReactRedux', ReactRedux)
-console.log('ReduxSaga', ReduxSaga)
+//console.log('ReduxSaga', ReduxSaga)
 
-const { createStore, combineReducers, bindActionCreators, compose, applyMiddleware } = Redux
+//const { createStore, combineReducers, bindActionCreators, compose, applyMiddleware } = Redux
 const { render } = ReactDOM
 const { connect, Provider } = ReactRedux
 const { Component, PureComponent, Fragment } = React
-const createSagaMiddleware = ReduxSaga.default
-const { call, put, takeOnly, takeEvery, takeLatest } = ReduxSaga.effects
+//const createSagaMiddleware = ReduxSaga.default
+//const { call, put, takeOnly, takeEvery, takeLatest, all, spawn, take } = ReduxSaga.effects
+const { withThumbsupGettersAndSetters } = ThumbsUp
 
-const initialState = {
-  numCols: 7,
-  numRows: 3,
-  gifs: [[]],
-  queryInput: '',
-  query: '',
-}
-const initialReducer = (state = initialState, action) => {
-  return state
-}
+import * as Store from './store'
+const { globalStore } = Store
 
-const sagaMiddleware = createSagaMiddleware()
-const customMiddleware = store => next => action => {
-  console.log('customMiddleware', action)
-  next(action)
-}
-
-function* mySaga() {
-  console.log('mySaga')
-}
-sagaMiddleware(mySaga)
-
-const globalStore = createStore(
-  initialReducer,
-  initialState,
-  applyMiddleware(sagaMiddleware, customMiddleware)
-)
-
-const GifsComponent = ThumbsUp(class extends PureComponent {
+const GifsComponent = withThumbsupGettersAndSetters(class extends PureComponent {
   render() {
     let gifs = []
     for (let j=0; j<this.state.gifs; j++) {
@@ -66,7 +40,7 @@ const GifsComponent = ThumbsUp(class extends PureComponent {
       </Fragment>
     )
   }
-}, globalStore)
+}, globalStore, Mappings)
 
 class PresentationalComponent extends PureComponent {
   render() {
@@ -89,7 +63,7 @@ class PresentationalComponent extends PureComponent {
   }
 }
 
-const ControlPanel = ThumbsUp(class extends PureComponent {
+const ControlPanel = withThumbsupGettersAndSetters(class extends PureComponent {
   decrementNumCols() {
     this.state.numCols = this.state.numCols - 1
   }
@@ -122,14 +96,14 @@ const ControlPanel = ThumbsUp(class extends PureComponent {
         </div>
         <div className="controls__row">
           <input onChange={(ev) => this.onQueryChange(ev)}/>
-          <button onClick={(ev) => this.submitQuery(ev)}/>
+          <button onClick={(ev) => this.submitQuery(ev)}>Search for {this.state.queryInput}</button>
         </div>
       </div>
     )
   }
-}, globalStore)
+}, globalStore, Mappings)
 
-const AppContainer = ThumbsUp(class extends PureComponent {
+const AppContainer = withThumbsupGettersAndSetters(class extends PureComponent {
   render() {  
     const { state } = this
     console.log('VIJ', 'ContainerComponent', 'render')
@@ -144,7 +118,7 @@ const AppContainer = ThumbsUp(class extends PureComponent {
       </Fragment>
     )
   }
-}, globalStore)
+}, globalStore, Mappings)
 
 class Line extends Component {
   getDefaultProps () { return { side: 'root' } }
@@ -189,17 +163,42 @@ render(
   document.getElementById('app')
 )
 
-class Event {
+class EventSystem {
   constructor() {
     this.queue = {}
   }
 
   on(evName, callb) {
     if (typeof this.queue[evName] === 'undefined') {
-      this.queue[evName] = []
+      this.queue[evName] = new Set()
     }
 
-    this.queue[evName].push(callb);
+    if (typeof callb === 'function') {
+      this.queue[evName].add(callb);
+    } else {
+      throw new Error('callback passed to on is not a function')
+    }
+  }
+
+  off(evName, callb) {
+    const evCallbs = this.queue[evName]
+
+    if (evCallbs && evCallbs.has(callb)) {
+      evCallbs.delete(callb)
+    }
+
+    if (evCallbs && evCallbs.size === 0) {
+      delete this.queue[evName]
+    }
+  }
+
+  onlyOnce(evName, callb) {
+    const wrappedCallb = ev => {
+      callb(ev)
+      this.off(evName, callb)
+    }
+
+    this.on(evName, wrappedCallb) 
   }
 
   dispatch(ev) {
@@ -208,16 +207,21 @@ class Event {
 
     if (typeof this.queue[evType] === 'undefined') return
 
-    while (this.queue[evType].length) {
-      (this.queue[evType].shift())(ev)
-    }
+    this.queue[evType].forEach(callb => {
+      callb(ev)
+    })
   }
 }
 
-const evRouter = new Event()
+const evRouter = new EventSystem()
 evRouter.on('TEST', (ev) => {
-  console.log('on', 'ev', ev)
+  console.log('TEST', 'on', 'ev', ev)
 })
-evRouter.dispatch({ type: 'TEST'})
+let circles = document.querySelectorAll('.grid__circle')
+Array.from(circles).forEach(circle => {
+  circle.addEventListener('click', (ev) => {
+    evRouter.dispatch({ type: 'TEST'})
+  })
+})
 
 module.hot.accept();
