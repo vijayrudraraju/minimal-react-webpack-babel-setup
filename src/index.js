@@ -1,46 +1,86 @@
+import 'babel-polyfill'
+
 import React from 'react'
 import ReactDOM from 'react-dom'
-//import * as Redux from 'redux'
 import * as ReactRedux from 'react-redux'
-//import * as ReduxSaga from 'redux-saga'
-import 'babel-polyfill'
+console.log('VIJ', 'React', React)
+console.log('VIJ', 'ReactDOM', ReactDOM)
+console.log('VIJ', 'ReactRedux', ReactRedux)
+const { Component, PureComponent, Fragment } = React
+const { render } = ReactDOM
+const { connect, Provider } = ReactRedux
+
 import * as ThumbsUp from 'thumbsup'
+console.log('VIJ', 'ThumbsUp', ThumbsUp)
+const { withThumbsupGettersAndSetters } = ThumbsUp
+
 import Mappings from './mappings'
+import * as Events from './events'
+import * as Store from './store'
+console.log('VIJ', 'Mappings', Mappings)
+console.log('VIJ', 'Events', Events)
+console.log('VIJ', 'Store', Store)
+const { GlobalStore } = Store
 
 import './../styles/index.scss'
 
 const title = 'My Minimal React Webpack Babel Setup'
 
-console.log('ThumbsUp', ThumbsUp)
-console.log('React', React)
-console.log('ReactDOM', ReactDOM)
-console.log('ReactRedux', ReactRedux)
-//console.log('ReduxSaga', ReduxSaga)
-
-//const { createStore, combineReducers, bindActionCreators, compose, applyMiddleware } = Redux
-const { render } = ReactDOM
-const { connect, Provider } = ReactRedux
-const { Component, PureComponent, Fragment } = React
-//const createSagaMiddleware = ReduxSaga.default
-//const { call, put, takeOnly, takeEvery, takeLatest, all, spawn, take } = ReduxSaga.effects
-const { withThumbsupGettersAndSetters } = ThumbsUp
-
-import * as Store from './store'
-const { globalStore } = Store
-
 const GifsComponent = withThumbsupGettersAndSetters(class extends PureComponent {
   render() {
+    let rawState = this.state
+    let rawGifs = rawState.gifs
+
+    if (!rawGifs || !rawGifs.data) return null
+
+    const { numCols, numRows } = this.props
+
+    console.log('VIJ', 'GifsComponent', 'render', { rawGifs, rawState, numCols, numRows })
+
+    let gifsData = rawGifs.data
+
+    /*
     let gifs = []
-    for (let j=0; j<this.state.gifs; j++) {
-      gifs.push(<img src={gifs[j].url}/>)
+    for (let j=0; j<gifsData.length; j++) {
+      gifs.push(<div className="GifsComponent__square"><img src={gifsData[j].images.fixed_width.url}/></div>)
     }
+    */
+
+    let rowDivs = []
+    let breakAll = false
+
+    for (let i=0; i<numRows; i++) {
+      let colDivs = []
+
+      for (let j=0; j<numCols; j++) {
+        let gifIdx = (i*numCols) + j
+        console.log('VIJ', 'render', { gifIdx, length: gifsData })
+
+        if (gifIdx < gifsData.length) {
+          colDivs.push(<div className="GifsComponent__square"><img className="GifsComponent__square__img" src={gifsData[gifIdx].images.fixed_width.url}/></div>)
+        } else {
+          breakAll = true
+          break
+        }
+      }
+
+      rowDivs.push(<div key={i} className="GifsComponent__row">{colDivs}</div>)
+
+      if (breakAll) {
+        console.log('VIJ', 'render', { breakAll })
+        break
+      }
+    }
+
+    console.log('VIJ', 'render', { rowDivs })
+
     return (
-      <Fragment>
-        {gifs}
-      </Fragment>
+      <div className="GifsComponent">
+        {rowDivs}
+      </div>
     )
   }
-}, globalStore, Mappings)
+}, GlobalStore, Mappings)
 
 class PresentationalComponent extends PureComponent {
   render() {
@@ -86,6 +126,7 @@ const ControlPanel = withThumbsupGettersAndSetters(class extends PureComponent {
   }
 
   render() {
+    console.log('VIJ', 'ControlPanel', 'render')
     return (
       <div className="controls">
         <div className="controls__row">
@@ -101,16 +142,19 @@ const ControlPanel = withThumbsupGettersAndSetters(class extends PureComponent {
       </div>
     )
   }
-}, globalStore, Mappings)
+}, GlobalStore, Mappings)
 
 const AppContainer = withThumbsupGettersAndSetters(class extends PureComponent {
   render() {  
     const { state } = this
-    console.log('VIJ', 'ContainerComponent', 'render')
+    console.log('VIJ', 'AppContainer', 'render')
     return (
       <Fragment>
         <ControlPanel/>
-        <GifsComponent/>
+        <GifsComponent
+          numCols={state.numCols} 
+          numRows={state.numRows}
+        />
         <PresentationalComponent 
           numCols={state.numCols} 
           numRows={state.numRows}
@@ -118,8 +162,16 @@ const AppContainer = withThumbsupGettersAndSetters(class extends PureComponent {
       </Fragment>
     )
   }
-}, globalStore, Mappings)
+}, GlobalStore, Mappings)
 
+render(
+  <Provider store={GlobalStore}>
+    <AppContainer/>
+  </Provider>,
+  document.getElementById('app')
+)
+
+/*
 class Line extends Component {
   getDefaultProps () { return { side: 'root' } }
 
@@ -155,73 +207,6 @@ class Line extends Component {
     />
   }
 }
-
-render(
-  <Provider store={globalStore}>
-    <AppContainer/>
-  </Provider>,
-  document.getElementById('app')
-)
-
-class EventSystem {
-  constructor() {
-    this.queue = {}
-  }
-
-  on(evName, callb) {
-    if (typeof this.queue[evName] === 'undefined') {
-      this.queue[evName] = new Set()
-    }
-
-    if (typeof callb === 'function') {
-      this.queue[evName].add(callb);
-    } else {
-      throw new Error('callback passed to on is not a function')
-    }
-  }
-
-  off(evName, callb) {
-    const evCallbs = this.queue[evName]
-
-    if (evCallbs && evCallbs.has(callb)) {
-      evCallbs.delete(callb)
-    }
-
-    if (evCallbs && evCallbs.size === 0) {
-      delete this.queue[evName]
-    }
-  }
-
-  onlyOnce(evName, callb) {
-    const wrappedCallb = ev => {
-      callb(ev)
-      this.off(evName, callb)
-    }
-
-    this.on(evName, wrappedCallb) 
-  }
-
-  dispatch(ev) {
-    const evType = ev.type
-    console.log('dispatch', 'evType', evType, this.queue[evType])
-
-    if (typeof this.queue[evType] === 'undefined') return
-
-    this.queue[evType].forEach(callb => {
-      callb(ev)
-    })
-  }
-}
-
-const evRouter = new EventSystem()
-evRouter.on('TEST', (ev) => {
-  console.log('TEST', 'on', 'ev', ev)
-})
-let circles = document.querySelectorAll('.grid__circle')
-Array.from(circles).forEach(circle => {
-  circle.addEventListener('click', (ev) => {
-    evRouter.dispatch({ type: 'TEST'})
-  })
-})
+*/
 
 module.hot.accept();

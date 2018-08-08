@@ -1,3 +1,27 @@
+.GifsComponent {
+  display: flex;
+  flex-direction: column;
+  margin: 10px;
+}
+.GifsComponent__row {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+}
+.GifsComponent__square {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-grow: 1;
+  width: 200px;
+  height: 200px;
+  border: 1px solid black;
+}
+.GifsComponent__square__img {
+  max-height: 180px;
+  max-width: 180px;
+}
+
 .grid {
   display: flex;
   flex-direction: column;

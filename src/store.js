@@ -1,7 +1,7 @@
 import * as Redux from 'redux'
 import * as ReduxSaga from 'redux-saga'
-
-console.log('Redux', Redux)
+console.log('VIJ', 'Redux', Redux)
+console.log('VIJ', 'ReduxSaga', ReduxSaga)
 
 const { createStore, combineReducers, bindActionCreators, compose, applyMiddleware } = Redux
 const { call, put, takeOnly, takeEvery, takeLatest, all, spawn, take } = ReduxSaga.effects
@@ -15,18 +15,21 @@ const initialState = {
   query: '',
 }
 
-export const actions = {
+export const Actions = {
   SET_GIFS: 'SET_GIFS'
 }
 
 const initialReducer = (state = initialState, action) => {
+  console.log('VIJ', 'initialReducer', action)
+  /*
   switch (action) {
-    case actions.SET_GIFS:
+    case Actions.SET_GIFS:
       return Object.assign({}, state, { 
         gifs: action.data 
       }) 
       break
   }
+  */
   return state
 }
 
@@ -51,7 +54,7 @@ function* mySaga() {
   ])
 }
 
-export const globalStore = createStore(
+export const GlobalStore = createStore(
   initialReducer,
   initialState,
   applyMiddleware(sagaMiddleware, customMiddleware)
