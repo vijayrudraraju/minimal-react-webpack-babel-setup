@@ -1,4 +1,5 @@
 const webpack = require('webpack');
+const path = require('path');
 
 module.exports = {
   entry: [
@@ -9,7 +10,10 @@ module.exports = {
     rules: [
       {
         test: /\.(js|jsx)$/,
-        /*exclude: /node_modules/,*/
+        include: [
+          path.resolve(__dirname, "src"),
+          path.resolve(__dirname, "node_modules/thumbsup")
+        ],
         use: ['babel-loader']
       },
       {
@@ -19,6 +23,9 @@ module.exports = {
     ]
   },
   resolve: {
+    alias: {
+      graphql$: path.resolve(__dirname, 'node_modules/graphql/index.js')
+    },
     extensions: ['*', '.js', '.jsx']
   },
   output: {

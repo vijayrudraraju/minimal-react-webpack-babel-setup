@@ -1,7 +1,10 @@
 {
+  "plugins": [
+    "relay"
+  ],
   "presets": [
     "env",
     "react",
-    "stage-2"
+    "stage-2",
   ]
 }

@@ -3,24 +3,53 @@ import 'babel-polyfill'
 import React from 'react'
 import ReactDOM from 'react-dom'
 import * as ReactRedux from 'react-redux'
+
 console.log('VIJ', 'React', React)
 console.log('VIJ', 'ReactDOM', ReactDOM)
 console.log('VIJ', 'ReactRedux', ReactRedux)
+
 const { Component, PureComponent, Fragment } = React
 const { render } = ReactDOM
 const { connect, Provider } = ReactRedux
 
 import * as ThumbsUp from 'thumbsup'
+
 console.log('VIJ', 'ThumbsUp', ThumbsUp)
+
 const { withThumbsupGettersAndSetters } = ThumbsUp
 
 import Mappings from './mappings'
 import * as Events from './events'
-import * as Store from './store'
+import * as LocalStore from './store'
+
 console.log('VIJ', 'Mappings', Mappings)
 console.log('VIJ', 'Events', Events)
 console.log('VIJ', 'Store', Store)
-const { GlobalStore } = Store
+
+const { GlobalStore } = LocalStore
+
+import {
+  Environment,
+  RecordSource,
+  Store
+} from 'relay-runtime'
+import { 
+  graphql,
+  QueryRenderer
+} from 'react-relay'
+import { Network } from 'relay-local-schema'
+import schema from './graphql/schema'
+const environment = new Environment({
+  network: Network.create({ schema }),
+  store: new Store(new RecordSource()),
+})
+
+//import Relay from 'react-relay'
+/*
+Relay.injectNetworkLayer(
+  new RelayLocalSchema.NetworkLayer({ schema })
+)
+*/
 
 import './../styles/index.scss'
 
@@ -164,12 +193,45 @@ const AppContainer = withThumbsupGettersAndSetters(class extends PureComponent {
   }
 }, GlobalStore, Mappings)
 
+const RelayContainer = class extends PureComponent {
+  render() {
+    return (
+      <QueryRenderer
+        environment={environment}
+        query={graphql`
+          query srcQuery {
+            users {
+              id
+            }
+          }
+        `}
+        variables={{}}
+        render={({error, props}) => {
+          if (error) {
+            return <div>Error!</div>
+          }
+          if (!props) {
+            return <div>Loading...</div>
+          }
+          return <div>{props.users[0].id}</div>
+        }}
+      />
+    )
+  }
+}
+
+render(
+  <RelayContainer/>,
+  document.getElementById('app')
+)
+/*
 render(
   <Provider store={GlobalStore}>
     <AppContainer/>
   </Provider>,
   document.getElementById('app')
 )
+*/
 
 /*
 class Line extends Component {

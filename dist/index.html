@@ -2,12 +2,14 @@
 <html>
   <head>
       <title>The Minimal React Webpack Babel Setup</title>
+      <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/3.1.1/firebaseui.css" />
   </head>
   <body>
     <div id="app"></div>
     <script src="https://www.gstatic.com/firebasejs/5.2.0/firebase.js"></script>
     <script>
       // Initialize Firebase
+      /*
       var config = {
       apiKey: "AIzaSyCHLQOAimbVTnJh3oRWgV3YiuqOhr4C9dE",
       authDomain: "tractal-0.firebaseapp.com",
@@ -17,7 +19,9 @@
       messagingSenderId: "1075441560445"
       };
       firebase.initializeApp(config);
+      */
     </script>
     <script src="/bundle.js"></script>
+    <div id="firebaseui"></div>
   </body>
 </html>
