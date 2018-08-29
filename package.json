@@ -5,8 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "webpack-dev-server --config ./webpack.config.js --mode development",
+    "start-default": "webpack-dev-server",
     "test": "echo \"No test specified\" && exit 0",
-    "relay": "relay-compiler --src ./src --schema ./schema.graphql --extensions js jsx"
+    "relay": "relay-compiler --src ./src --schema ./schema.graphql --extensions js jsx",
+    "cosmos": "cosmos",
+    "cosmos:export": "cosmos-export"
   },
   "keywords": [],
   "author": "",
@@ -20,14 +23,16 @@
     "babel-preset-stage-2": "^6.24.1",
     "css-loader": "^1.0.0",
     "graphql": "^0.13.2",
+    "html-webpack-plugin": "^3.2.0",
     "node-sass": "^4.9.2",
+    "react-cosmos": "^4.7.0-2",
     "react-hot-loader": "^4.3.3",
     "relay-compiler": "^1.6.2",
     "sass-loader": "^7.0.3",
     "style-loader": "^0.21.0",
-    "webpack": "^4.15.1",
-    "webpack-cli": "^3.0.8",
-    "webpack-dev-server": "^3.1.4"
+    "webpack": "^4.16.5",
+    "webpack-cli": "^3.1.0",
+    "webpack-dev-server": "^3.1.5"
   },
   "dependencies": {
     "axios": "^0.18.0",
@@ -38,13 +43,15 @@
     "graphql-relay": "^0.5.5",
     "mobx": "^5.0.3",
     "mobx-react": "^5.2.3",
+    "prop-types": "^15.6.2",
     "react": "^16.4.1",
     "react-dom": "^16.4.1",
     "react-redux": "^5.0.7",
     "react-relay": "^1.6.2",
     "redux": "^4.0.0",
+    "redux-bees": "^0.1.10",
     "redux-saga": "^0.16.0",
     "relay-local-schema": "^0.7.0",
-    "thumbsup": "0.0.1"
+    "thumb-up": "0.1.0"
   }
 }
