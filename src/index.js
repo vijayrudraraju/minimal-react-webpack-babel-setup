@@ -4,30 +4,136 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import * as ReactRedux from 'react-redux'
 
-console.log('VIJ', 'React', React)
-console.log('VIJ', 'ReactDOM', ReactDOM)
-console.log('VIJ', 'ReactRedux', ReactRedux)
-
 const { Component, PureComponent, Fragment } = React
 const { render } = ReactDOM
 const { connect, Provider } = ReactRedux
 
-import * as ThumbsUp from 'thumbsup'
+//import * as ThumbsUp from 'thumbsup'
+const thumbUpWithGettersAndSetters = (WrappedComponent, storeRef = null, registeredSchema = null) => {
 
-console.log('VIJ', 'ThumbsUp', ThumbsUp)
+  const accessedStateHash = {}
+  let isFirstMapStateToPropsCall = true
+  let renderCount = 0
 
-const { withThumbsupGettersAndSetters } = ThumbsUp
+  const ThumbUpComponent = class extends Component {
+    constructor(props) {
+      super(props)
+
+      const storeState = storeRef.getState()
+      console.log('VIJ', 'ThumbUpComponent->constructor', WrappedComponent.name, { storeState })
+
+      WrappedComponent.prototype.remoteState = {}
+      WrappedComponent.prototype.localState = {
+        increment: (key) => {
+          console.log('VJ', 'localState->increment', { key })
+          storeRef.dispatch({ type: `SET_${key}`, value: ++(storeState.nonApiReducer[key]) })
+        },
+        decrement: (key) => {
+          console.log('VJ', 'localState->decrement', { key })
+          storeRef.dispatch({ type: `SET_${key}`, value: --(storeState.nonApiReducer[key]) })
+        },
+        set: (key, value) => {
+          console.log('VJ', 'localState->set', { key }, storeState.nonApiReducer[key])
+          storeRef.dispatch({ type: `SET_${key}`, value })
+        }
+      }
+
+      for (const [key, value] of Object.entries(storeState.nonApiReducer)) {
+        Object.defineProperty(WrappedComponent.prototype.localState, key, {
+          set: (x) => {
+            if (!accessedStateHash[key]) {
+              accessedStateHash[key] = true
+              storeRef.dispatch({ type: 'UPDATE' })
+            }
+            console.log('VJ', 'setting->localState', `${key} <= ${x}`)
+            storeRef.dispatch({ type: `SET_${key}`, value: x })
+          },
+          get: () => {
+            if (!accessedStateHash[key]) {
+              accessedStateHash[key] = true
+              storeRef.dispatch({ type: 'UPDATE' })
+              console.log('VIJ', 'getting->localState', `${key}: ${this.props._store[key]}`, 'for', WrappedComponent.name)
+            }
+            return storeState.nonApiReducer[key]
+          },
+          increment: () => {
+            console.log('VJ', 'incrementing->localState', `${key}++`)
+          }
+        })
+      }
+
+      const thumbUpReducer = (previousState, action) => {
+        for (const [key, value] of Object.entries(storeState.nonApiReducer)) {
+          if (action.type === `SET_${key}`) {
+            previousState['nonApiReducer'][key] = action.value
+            break
+          }
+        }
+        const nextState = Object.assign({}, previousState)
+        //console.log('VJ', 'thumbUpReducer', { previousState, action, nextState })
+        return nextState
+      }
+      storeRef.replaceReducer(thumbUpReducer) // triggers a re-render
+    }
+
+    render() {
+      console.log('VIJ', 'ThumbUpComponent->render', WrappedComponent.name, { renderCount, accessedStateHash })
+      renderCount++
+      return (
+        <WrappedComponent
+          {...this.props}>
+          {this.props.children}
+        </WrappedComponent>
+      )
+    }
+  }
+
+  return connect(
+    function mapStateToProps(state) {
+      console.log('VIJ', 'mapStateToProps', 'for', WrappedComponent.name, { state, accessedStateHash, isFirstMapStateToPropsCall, renderCount, hashLength: Object.keys(accessedStateHash).length })
+
+      let returnedStore = {}
+      if (Object.keys(accessedStateHash).length === 0) {
+        //returnedStore = state.nonApiReducer
+        returnedStore = { numRows: 0 }
+        isFirstMapStateToPropsCall = false
+      } else {
+        Object.keys(accessedStateHash).forEach(key => {
+          returnedStore[key] = state.nonApiReducer[key]
+        })
+      }
+
+      console.log('VIJ', 'mapStateToProps', 'for', WrappedComponent.name, { returnedStore })
+
+      return {
+        _store: returnedStore
+        /*
+        _store: {
+          numCols: state.nonApiReducer.numCols,
+          numRows: state.nonApiReducer.numRows,
+        }
+        */
+      }
+    },
+    null
+    /*
+    function mapDispatchToProps(dispatch) {
+      return {
+        actions: bindActionCreators(actionCreators, dispatch)
+      }
+    }
+    */
+  )(ThumbUpComponent)
+
+}
 
 import Mappings from './mappings'
 import * as Events from './events'
-import * as LocalStore from './store'
+import * as RootStore from './store'
 
-console.log('VIJ', 'Mappings', Mappings)
-console.log('VIJ', 'Events', Events)
-console.log('VIJ', 'Store', Store)
+const { GlobalStore } = RootStore
 
-const { GlobalStore } = LocalStore
-
+/*
 import {
   Environment,
   RecordSource,
@@ -43,30 +149,29 @@ const environment = new Environment({
   network: Network.create({ schema }),
   store: new Store(new RecordSource()),
 })
-
-//import Relay from 'react-relay'
-/*
-Relay.injectNetworkLayer(
-  new RelayLocalSchema.NetworkLayer({ schema })
-)
 */
+
+
 
 import './../styles/index.scss'
 
-const title = 'My Minimal React Webpack Babel Setup'
 
-const GifsComponent = withThumbsupGettersAndSetters(class extends PureComponent {
+
+const GifsComponent = thumbUpWithGettersAndSetters(class GifsComponent extends PureComponent {
+  componentDidMount() {
+    console.log('VIJ', 'componentDidMount', 'GifsComponent')
+  }
+
   render() {
-    let rawState = this.state
-    let rawGifs = rawState.gifs
+    let { gifs } = this.remoteState
 
-    if (!rawGifs || !rawGifs.data) return null
+    console.log('VIJ', 'render', 'GifsComponent', { remoteState: this.remoteState, localState: this.localState })
 
-    const { numCols, numRows } = this.props
+    if (!gifs || !gifs.data) return null
 
-    console.log('VIJ', 'GifsComponent', 'render', { rawGifs, rawState, numCols, numRows })
+    const { numCols, numRows } = this.localState
 
-    let gifsData = rawGifs.data
+    let gifsData = gifs.data
 
     /*
     let gifs = []
@@ -83,7 +188,6 @@ const GifsComponent = withThumbsupGettersAndSetters(class extends PureComponent 
 
       for (let j=0; j<numCols; j++) {
         let gifIdx = (i*numCols) + j
-        console.log('VIJ', 'render', { gifIdx, length: gifsData })
 
         if (gifIdx < gifsData.length) {
           colDivs.push(<div className="GifsComponent__square"><img className="GifsComponent__square__img" src={gifsData[gifIdx].images.fixed_width.url}/></div>)
@@ -96,12 +200,10 @@ const GifsComponent = withThumbsupGettersAndSetters(class extends PureComponent 
       rowDivs.push(<div key={i} className="GifsComponent__row">{colDivs}</div>)
 
       if (breakAll) {
-        console.log('VIJ', 'render', { breakAll })
+        console.log('VJ', 'render', { breakAll })
         break
       }
     }
-
-    console.log('VIJ', 'render', { rowDivs })
 
     return (
       <div className="GifsComponent">
@@ -111,9 +213,16 @@ const GifsComponent = withThumbsupGettersAndSetters(class extends PureComponent 
   }
 }, GlobalStore, Mappings)
 
-class PresentationalComponent extends PureComponent {
+
+
+class CirclesComponent extends PureComponent {
+  componentDidMount() {
+    console.log('VIJ', 'componentDidMount', 'CirclesComponent')
+  }
+
   render() {
     const { numCols, numRows } = this.props
+    console.log('VIJ', 'render', 'CirclesComponent', { props: this.props })
     let colDivs = []
     for (let j=0; j<numCols; j++) {
       colDivs.push(
@@ -132,30 +241,39 @@ class PresentationalComponent extends PureComponent {
   }
 }
 
-const ControlPanel = withThumbsupGettersAndSetters(class extends PureComponent {
-  decrementNumCols() {
-    this.state.numCols = this.state.numCols - 1
-  }
-  incrementNumCols() {
-    this.state.numCols = this.state.numCols + 1
+
+
+const ControlPanel = thumbUpWithGettersAndSetters(class ControlPanel extends PureComponent {
+  componentDidMount() {
+    console.log('VIJ', 'componentDidMount', 'ControlPanel')
   }
 
-  decrementNumRows() {
-    this.state.numRows = this.state.numRows - 1
+  decrementNumCols() { // decrement('localState', 'numCols')
+    this.localState.decrement('numCols')
   }
-  incrementNumRows() {
-    this.state.numRows = this.state.numRows + 1
+  incrementNumCols() { // increment('localState', 'numCols')
+    //this.localState.numCols = this.localState.numCols + 1
+    this.localState.increment('numCols')
   }
 
-  onQueryChange(ev) {
-    this.state.queryInput = ev.target.value
+  decrementNumRows() { // decrement('localState', 'numRows')
+    this.localState.decrement('numRows')
   }
-  submitQuery(ev) {
-    this.state.query = this.state.queryInput
+  incrementNumRows() { // increment('localState', 'numRows')
+    this.localState.increment('numRows')
+  }
+
+  onQueryChange(ev) { // setFromEvent('localState', 'queryInput')
+    console.log('VJ', 'onQueryChange', { value: ev.target.value })
+    this.localState.set('queryInput', ev.target.value)
+  }
+  submitQuery(ev) { // setAndCommit('localState', 'query')
+    console.log('VJ', 'submitQuery', { value: this.localState.queryInput })
+    this.localState.set('queryInput', this.localState.queryInput)
   }
 
   render() {
-    console.log('VIJ', 'ControlPanel', 'render')
+    console.log('VIJ', 'render', 'ControlPanel', { localState: this.localState })
     return (
       <div className="controls">
         <div className="controls__row">
@@ -166,33 +284,49 @@ const ControlPanel = withThumbsupGettersAndSetters(class extends PureComponent {
         </div>
         <div className="controls__row">
           <input onChange={(ev) => this.onQueryChange(ev)}/>
-          <button onClick={(ev) => this.submitQuery(ev)}>Search for {this.state.queryInput}</button>
+          <button onClick={(ev) => this.submitQuery(ev)}>Search for {this.localState.queryInput}</button>
         </div>
       </div>
     )
   }
 }, GlobalStore, Mappings)
 
-const AppContainer = withThumbsupGettersAndSetters(class extends PureComponent {
+
+
+const AppContainer = thumbUpWithGettersAndSetters(class AppContainer extends PureComponent {
+  componentDidMount() {
+    console.log('VIJ', 'componentDidMount', 'AppContainer')
+  }
+
   render() {  
-    const { state } = this
-    console.log('VIJ', 'AppContainer', 'render')
+    const { localState, globalState } = this
+    console.log('VIJ', 'render', 'AppContainer', { localState, globalState })
     return (
       <Fragment>
         <ControlPanel/>
         <GifsComponent
-          numCols={state.numCols} 
-          numRows={state.numRows}
+          numCols={localState.numCols} 
+          numRows={localState.numRows}
         />
-        <PresentationalComponent 
-          numCols={state.numCols} 
-          numRows={state.numRows}
+        <CirclesComponent 
+          numCols={localState.numCols} 
+          numRows={localState.numRows}
         />
       </Fragment>
     )
   }
 }, GlobalStore, Mappings)
 
+
+
+render(
+  <Provider store={GlobalStore}>
+    <AppContainer/>
+  </Provider>,
+  document.getElementById('app')
+)
+
+/*
 const RelayContainer = class extends PureComponent {
   render() {
     return (
@@ -202,6 +336,12 @@ const RelayContainer = class extends PureComponent {
           query srcQuery {
             users {
               id
+              email
+              displayName
+              photoURL 
+              uid 
+              providerID
+              phoneNumber 
             }
           }
         `}
@@ -213,7 +353,20 @@ const RelayContainer = class extends PureComponent {
           if (!props) {
             return <div>Loading...</div>
           }
-          return <div>{props.users[0].id}</div>
+
+          console.log('VJ', 'render', { users: props.users })
+
+          let ret = (<div>
+            <div>{props.users[0].id}</div>
+            <div>{props.users[0].email}</div>
+            <div>{props.users[0].displayName}</div>
+            <div>{props.users[0].photoURL}</div>
+            <div>{props.users[0].uid}</div>
+            <div>{props.users[0].providerID}</div>
+            <div>{props.users[0].phoneNumber}</div>
+          </div>)
+
+          return ret
         }}
       />
     )
@@ -224,51 +377,6 @@ render(
   <RelayContainer/>,
   document.getElementById('app')
 )
-/*
-render(
-  <Provider store={GlobalStore}>
-    <AppContainer/>
-  </Provider>,
-  document.getElementById('app')
-)
-*/
-
-/*
-class Line extends Component {
-  getDefaultProps () { return { side: 'root' } }
-
-  getInitialState () { return { rotation: 30 } }
-
-  componentDidMount () { 
-    this.updateRotation()
-  }
-
-  componentWillUnmount () {
-  }
-
-  updateRotation () {
-    const opp = 100
-    const adj = this.el.offsetWidth
-    const rotation = Math.atan(opp / adj)
-    this.setState({rotation})
-  }
-
-  render () {
-    const offsetX = -25
-    const offsetY = -25
-    const scaleX = this.props.side === 'left' ? -1 : 1
-    return <div
-    className={'line ' + this.props.side}
-    ref={el => this.el = el}
-    style={{
-      transform: `
-      rotate(${this.state.rotation * scaleX}rad)
-      translateX(${offsetX * scaleX}px)
-      translateY(${offsetY}px)`
-    }}
-    />
-  }
-}
 */
 
 module.hot.accept();
