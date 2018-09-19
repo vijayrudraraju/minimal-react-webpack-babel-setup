@@ -1,26 +1,24 @@
 import React from 'react'
+const { Component, Fragment } = React
+
 import ReactDOM from 'react-dom'
+const { render } = ReactDOM
+
 import * as Redux from 'redux'
+const { createStore, combineReducers, bindActionCreators, compose, applyMiddleware } = Redux
+
 import * as ReactRedux from 'react-redux'
+const { connect, Provider } = ReactRedux
+
 import * as ReduxSaga from 'redux-saga'
+const createSagaMiddleware = ReduxSaga.default
+const { call, put, takeOnly, takeEvery, takeLatest } = ReduxSaga.effects
+
 import 'babel-polyfill'
 
 import './../styles/index.scss'
 
 const title = 'My Minimal React Webpack Babel Setup'
-
-console.log('React', React)
-console.log('ReactDOM', ReactDOM)
-console.log('Redux', Redux)
-console.log('ReactRedux', ReactRedux)
-console.log('ReduxSaga', ReduxSaga)
-
-const { createStore, combineReducers, bindActionCreators, compose, applyMiddleware } = Redux
-const { render } = ReactDOM
-const { connect, Provider } = ReactRedux
-const { Component, Fragment } = React
-const createSagaMiddleware = ReduxSaga.default
-const { call, put, takeOnly, takeEvery, takeLatest } = ReduxSaga.effects
 
 const PresentationalComponent = ({ numCols, numRows }) => {
   console.log('PresentationalComponent', numCols, numRows)
@@ -42,6 +40,7 @@ const PresentationalComponent = ({ numCols, numRows }) => {
 }
 
 const ControlPanel = ({decrementNumCols, incrementNumCols, decrementNumRows, incrementNumRows}) => {
+  console.log('ControlPanel', { decrementNumCols, incrementNumCols, decrementNumRows, incrementNumRows })
   return (
     <div className="controls">
     <div className="controls__row"><button onClick={decrementNumCols}>-</button>Columns<button onClick={incrementNumCols}>+</button></div>
@@ -166,47 +165,9 @@ const store = createStore(
 
 render(
   <Provider store={store}>
-  <AppContainer/>
+    <AppContainer/>
   </Provider>,
   document.getElementById('app')
 )
-
-class Event {
-  constructor() {
-    this.queue = {}
-  }
-
-  on(evName, callb) {
-    if (typeof this.queue[evName] === 'undefined') {
-      this.queue[evName] = []
-    }
-
-    this.queue[evName].push(callb);
-  }
-
-  dispatch(ev) {
-    const evType = ev.type
-    console.log('dispatch', 'evType', evType, this.queue[evType])
-
-    if (typeof this.queue[evType] === 'undefined') return
-
-    while (this.queue[evType].length) {
-      (this.queue[evType].shift())(ev)
-    }
-  }
-}
-
-const evRouter = new Event()
-evRouter.on('TEST', (ev) => {
-  console.log('on', 'ev', ev)
-})
-evRouter.dispatch({ type: 'TEST'})
-
-/*
-ReactDOM.render(
-  <div>{title}</div>,
-  document.getElementById('app')
-);
-*/
 
 module.hot.accept();
