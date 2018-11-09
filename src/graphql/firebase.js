@@ -61,6 +61,8 @@ const ui = new firebaseui.auth.AuthUI(firebase.auth())
 ui.start('#firebaseui', uiConfig)
 
 const firestoreDb = firebase.firestore()
+const settings = {/* your settings... */ timestampsInSnapshots: true};
+firestoreDb.settings(settings);
 
 export const usersColl = firestoreDb.collection("users")
 export const loopsColl = firestoreDb.collection("loops")
@@ -69,9 +71,3 @@ export const tracksColl = firestoreDb.collection("tracks")
 export const banksColl = firestoreDb.collection("banks")
 export const kitsColl = firestoreDb.collection("kits")
 export const projectsColl = firestoreDb.collection("projects")
-
-usersColl.get().then(querySnapshot => {
-  querySnapshot.forEach(doc => {
-    console.log('VJ', 'usersColl', { id: doc.id, ...doc.data() })
-  })
-})

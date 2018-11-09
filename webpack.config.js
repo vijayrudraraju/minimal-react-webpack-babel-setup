@@ -12,7 +12,7 @@ module.exports = {
         test: /\.(js|jsx)$/,
         include: [
           path.resolve(__dirname, "src"),
-          path.resolve(__dirname, "node_modules/thumbsup")
+          //path.resolve(__dirname, "node_modules/thumbsup")
         ],
         use: ['babel-loader']
       },

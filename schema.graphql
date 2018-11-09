@@ -4,4 +4,10 @@ type Query {
 
 type User {
   id: ID
+  email: String
+  displayName: String
+  photoURL: String
+  uid: String
+  providerID: String
+  phoneNumber: String
 }

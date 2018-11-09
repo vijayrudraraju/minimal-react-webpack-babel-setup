@@ -18,6 +18,7 @@
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.5",
     "babel-plugin-relay": "^1.6.2",
+    "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.7.0",
     "babel-preset-react": "^6.24.1",
     "babel-preset-stage-2": "^6.24.1",
@@ -30,13 +31,12 @@
     "relay-compiler": "^1.6.2",
     "sass-loader": "^7.1.0",
     "style-loader": "^0.21.0",
-    "webpack": "^4.17.1",
+    "webpack": "^4.17.2",
     "webpack-cli": "^3.1.0",
     "webpack-dev-server": "^3.1.7"
   },
   "dependencies": {
     "axios": "^0.18.0",
-    "babel-polyfill": "^6.26.0",
     "firebase": "^5.3.1",
     "firebaseui": "^3.2.0",
     "graphql": "^0.13.2",
@@ -50,6 +50,7 @@
     "redux": "^4.0.0",
     "redux-bees": "^0.1.10",
     "redux-saga": "^0.16.0",
+    "relay": "^0.8.0-1",
     "relay-local-schema": "^0.7.0",
     "thumb-up": "0.1.0"
   }

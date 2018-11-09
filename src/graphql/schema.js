@@ -13,9 +13,10 @@ function fetchUsers() {
   return db.usersColl.get().then(querySnapshot => {
     let ret = []
     querySnapshot.forEach(doc => {
-      console.log('VJ', 'fetchPeople', { id: doc.id, ...doc.data() })
+      const data = doc.data()
+      console.log('VJ', 'fetchUsers', { id: doc.id, ...data })
       //ret.push({ id: doc.id, ...doc.data() })
-      ret.push({ id: doc.id })
+      ret.push({ id: doc.id, ...data })
     })
     return ret
   })
@@ -41,6 +42,10 @@ const UserType = new GraphQLObjectType({
     email: {type: GraphQLString},
     id: {type: GraphQLString},
     displayName: {type: GraphQLString},
+    photoURL: {type: GraphQLString},
+    uid: {type: GraphQLString},
+    providerID: {type: GraphQLString},
+    phoneNumber: {type: GraphQLString},
   })
 })
 

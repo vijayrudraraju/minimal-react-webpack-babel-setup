@@ -1,6 +1,6 @@
 /**
  * @flow
- * @relayHash 33255235c79be8193ac6937cf400dbb9
+ * @relayHash c5d302ae3c67b8866bc0db7dd1e79fd2
  */
 
 /* eslint-disable */
@@ -12,7 +12,13 @@ import type { ConcreteRequest } from 'relay-runtime';
 export type srcQueryVariables = {||};
 export type srcQueryResponse = {|
   +users: ?$ReadOnlyArray<?{|
-    +id: ?string
+    +id: ?string,
+    +email: ?string,
+    +displayName: ?string,
+    +photoURL: ?string,
+    +uid: ?string,
+    +providerID: ?string,
+    +phoneNumber: ?string,
   |}>
 |};
 export type srcQuery = {|
@@ -26,6 +32,12 @@ export type srcQuery = {|
 query srcQuery {
   users {
     id
+    email
+    displayName
+    photoURL
+    uid
+    providerID
+    phoneNumber
   }
 }
 */
@@ -47,6 +59,48 @@ var v0 = [
         "name": "id",
         "args": null,
         "storageKey": null
+      },
+      {
+        "kind": "ScalarField",
+        "alias": null,
+        "name": "email",
+        "args": null,
+        "storageKey": null
+      },
+      {
+        "kind": "ScalarField",
+        "alias": null,
+        "name": "displayName",
+        "args": null,
+        "storageKey": null
+      },
+      {
+        "kind": "ScalarField",
+        "alias": null,
+        "name": "photoURL",
+        "args": null,
+        "storageKey": null
+      },
+      {
+        "kind": "ScalarField",
+        "alias": null,
+        "name": "uid",
+        "args": null,
+        "storageKey": null
+      },
+      {
+        "kind": "ScalarField",
+        "alias": null,
+        "name": "providerID",
+        "args": null,
+        "storageKey": null
+      },
+      {
+        "kind": "ScalarField",
+        "alias": null,
+        "name": "phoneNumber",
+        "args": null,
+        "storageKey": null
       }
     ]
   }
@@ -56,7 +110,7 @@ return {
   "operationKind": "query",
   "name": "srcQuery",
   "id": null,
-  "text": "query srcQuery {\n  users {\n    id\n  }\n}\n",
+  "text": "query srcQuery {\n  users {\n    id\n    email\n    displayName\n    photoURL\n    uid\n    providerID\n    phoneNumber\n  }\n}\n",
   "metadata": {},
   "fragment": {
     "kind": "Fragment",
@@ -75,5 +129,5 @@ return {
 };
 })();
 // prettier-ignore
-(node/*: any*/).hash = 'f1ccf60aa0de652fcf0cecc5e9cc7c10';
+(node/*: any*/).hash = '1187bb8693d644caecc2482805ec41af';
 module.exports = node;

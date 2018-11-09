@@ -59,7 +59,7 @@ const initialReducer = (state = initialState, action) => {
 
 const sagaMiddleware = createSagaMiddleware()
 const customMiddleware = store => next => action => {
-  console.log('customMiddleware', action)
+  console.log('VJ', 'customMiddleware', action)
   next(action)
 }
 

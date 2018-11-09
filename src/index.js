@@ -3,6 +3,7 @@ import 'babel-polyfill'
 import React from 'react'
 import ReactDOM from 'react-dom'
 import * as ReactRedux from 'react-redux'
+console.log('VJ', 'requiredPath', require.resolve('react-redux'))
 
 const { Component, PureComponent, Fragment } = React
 const { render } = ReactDOM
@@ -13,16 +14,76 @@ const thumbUpWithGettersAndSetters = (WrappedComponent, storeRef = null, registe
 
   const accessedStateHash = {}
   let isFirstMapStateToPropsCall = true
+  
   let renderCount = 0
+
+  let remoteState = {}
+  let localState = {
+    increment: (key) => {
+      console.log('VJ', 'localState->increment', { key })
+      storeRef.dispatch({ type: `SET_${key}`, value: ++(storeState.nonApiReducer[key]) })
+    },
+    decrement: (key) => {
+      console.log('VJ', 'localState->decrement', { key })
+      storeRef.dispatch({ type: `SET_${key}`, value: --(storeState.nonApiReducer[key]) })
+    },
+    set: (key, value) => {
+      console.log('VJ', 'localState->set', { key }, storeState.nonApiReducer[key])
+      storeRef.dispatch({ type: `SET_${key}`, value })
+    }
+  }
+
+  function addStoreProxy(storeRef) {
+    const storeState = storeRef.getState()
+
+    for (const [key, value] of Object.entries(storeState.nonApiReducer)) {
+      console.log('VJ', 'addStoreProxy', `${key} == ${value}`)
+      Object.defineProperty(localState, key, {
+        set: (x) => {
+          if (!accessedStateHash[key]) {
+            accessedStateHash[key] = true
+            storeRef.dispatch({ type: 'UPDATE' })
+          }
+          console.log('VJ', 'addStoreProxy->setting', `${key} <= ${x}`)
+          storeRef.dispatch({ type: `SET_${key}`, value: x })
+        },
+        get: () => {
+          if (!accessedStateHash[key]) {
+            accessedStateHash[key] = true
+            storeRef.dispatch({ type: 'UPDATE' })
+            console.log('VIJ', 'addStoreProxy->getting', `${key}: ${storeState.nonApiReducer[key]}`, 'for', WrappedComponent.name)
+          }
+          return storeState.nonApiReducer[key]
+        }
+      })
+    }
+  }
+
+  function updateReducer(storeRef) {
+    const storeState = storeRef.getState()
+
+    const thumbUpReducer = (previousState, action) => {
+      for (const [key, value] of Object.entries(storeState.nonApiReducer)) {
+        if (action.type === `SET_${key}`) {
+          previousState['nonApiReducer'][key] = action.value
+          break
+        }
+      }
+      const nextState = Object.assign({}, previousState)
+      //console.log('VJ', 'thumbUpReducer', { previousState, action, nextState })
+      return nextState
+    }
+    storeRef.replaceReducer(thumbUpReducer) // triggers a re-render
+  }
 
   const ThumbUpComponent = class extends Component {
     constructor(props) {
       super(props)
 
       const storeState = storeRef.getState()
-      console.log('VIJ', 'ThumbUpComponent->constructor', WrappedComponent.name, { storeState })
+      //console.log('VIJ', 'localState->constructor', WrappedComponent.name, { storeState })
 
-      WrappedComponent.prototype.remoteState = {}
+      WrappedComponent.prototype.remoteState = remoteState
       WrappedComponent.prototype.localState = {
         increment: (key) => {
           console.log('VJ', 'localState->increment', { key })
@@ -38,53 +99,25 @@ const thumbUpWithGettersAndSetters = (WrappedComponent, storeRef = null, registe
         }
       }
 
-      for (const [key, value] of Object.entries(storeState.nonApiReducer)) {
-        Object.defineProperty(WrappedComponent.prototype.localState, key, {
-          set: (x) => {
-            if (!accessedStateHash[key]) {
-              accessedStateHash[key] = true
-              storeRef.dispatch({ type: 'UPDATE' })
-            }
-            console.log('VJ', 'setting->localState', `${key} <= ${x}`)
-            storeRef.dispatch({ type: `SET_${key}`, value: x })
-          },
-          get: () => {
-            if (!accessedStateHash[key]) {
-              accessedStateHash[key] = true
-              storeRef.dispatch({ type: 'UPDATE' })
-              console.log('VIJ', 'getting->localState', `${key}: ${this.props._store[key]}`, 'for', WrappedComponent.name)
-            }
-            return storeState.nonApiReducer[key]
-          },
-          increment: () => {
-            console.log('VJ', 'incrementing->localState', `${key}++`)
-          }
-        })
-      }
-
-      const thumbUpReducer = (previousState, action) => {
-        for (const [key, value] of Object.entries(storeState.nonApiReducer)) {
-          if (action.type === `SET_${key}`) {
-            previousState['nonApiReducer'][key] = action.value
-            break
-          }
-        }
-        const nextState = Object.assign({}, previousState)
-        //console.log('VJ', 'thumbUpReducer', { previousState, action, nextState })
-        return nextState
-      }
-      storeRef.replaceReducer(thumbUpReducer) // triggers a re-render
+      addStoreProxy(storeRef)
+      updateReducer(storeRef)
     }
 
     render() {
-      console.log('VIJ', 'ThumbUpComponent->render', WrappedComponent.name, { renderCount, accessedStateHash })
       renderCount++
+
+      const smartComponent = React.createElement(WrappedComponent, this.props, this.props.children) 
+      console.log('VIJ', 'ThumbUpComponent->render', { WrappedComponent, smartComponent }, { renderCount, accessedStateHash })
+
+      /*
       return (
         <WrappedComponent
           {...this.props}>
           {this.props.children}
         </WrappedComponent>
       )
+      */
+      return smartComponent
     }
   }
 
@@ -107,22 +140,14 @@ const thumbUpWithGettersAndSetters = (WrappedComponent, storeRef = null, registe
 
       return {
         _store: returnedStore
-        /*
-        _store: {
-          numCols: state.nonApiReducer.numCols,
-          numRows: state.nonApiReducer.numRows,
-        }
-        */
       }
     },
-    null
-    /*
     function mapDispatchToProps(dispatch) {
+      console.log('VJ', 'mapDispatchToProps', 'for', WrappedComponent.name, { dispatch })
       return {
-        actions: bindActionCreators(actionCreators, dispatch)
+        //actions: bindActionCreators(actionCreators, dispatch)
       }
     }
-    */
   )(ThumbUpComponent)
 
 }
@@ -299,18 +324,16 @@ const AppContainer = thumbUpWithGettersAndSetters(class AppContainer extends Pur
   }
 
   render() {  
-    const { localState, globalState } = this
-    console.log('VIJ', 'render', 'AppContainer', { localState, globalState })
+    //const { localState, globalState } = this
+    //console.log('VIJ', 'render', 'AppContainer', { localState, globalState })
+    //const { localState, globalState } = this
+    console.log('VJ', 'render', 'AppContainer', { props: this.props })
     return (
       <Fragment>
         <ControlPanel/>
-        <GifsComponent
-          numCols={localState.numCols} 
-          numRows={localState.numRows}
-        />
         <CirclesComponent 
-          numCols={localState.numCols} 
-          numRows={localState.numRows}
+          //numCols={localState.numCols} 
+          //numRows={localState.numRows}
         />
       </Fragment>
     )
